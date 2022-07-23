@@ -1,15 +1,16 @@
-package com.orc.orchestrationdemo.executor;
+package com.orc.orchestration.demo.executor;
 
-import com.orc.orchestrationdemo.task.ConnectorTask;
+import com.orc.orchestration.demo.task.ConnectorTask;
+import org.springframework.stereotype.Component;
 
+@Component
 public class BulkJobExecutor implements  Executor{
 
     private ConnectorTask bulkJobProcess;
 
-    public BulkJobExecutor(ConnectorTask bulkJobProcess) {
+    public void setBulkJobProcess(ConnectorTask bulkJobProcess) {
         this.bulkJobProcess = bulkJobProcess;
     }
-
 
     public void execute(Object context){
         bulkJobProcess.executeChain(context);

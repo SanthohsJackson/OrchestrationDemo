@@ -1,4 +1,4 @@
-package com.orc.orchestrationdemo.task;
+package com.orc.orchestration.demo.task;
 
 public interface ConnectorTask {
 
