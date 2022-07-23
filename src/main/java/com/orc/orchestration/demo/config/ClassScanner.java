@@ -42,7 +42,7 @@ public class ClassScanner {
             try {
                 Object connectorTask = applicationContext.getBean(Class.forName(beanClass));
                 if (connectorTask instanceof ConnectorTask) {
-                    jobs.put(connectorTask.getClass().getAnnotation(JobOrder.class).value(), (ConnectorTask) connectorTask);
+                    jobs.put(connectorTask.getClass().getAnnotation(JobOrder.class).priority(), (ConnectorTask) connectorTask);
                 }
             } catch (ClassNotFoundException e) {
                 System.out.println("Error reading beach definitions");

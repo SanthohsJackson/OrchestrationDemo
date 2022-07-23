@@ -4,7 +4,7 @@ import com.orc.orchestration.demo.config.JobOrder;
 import org.springframework.stereotype.Component;
 
 @Component
-@JobOrder(value = 2)
+@JobOrder(priority = 1, after = JobCreateTask.class)
 public final class JobUploadTask implements ConnectorTask {
 
 
