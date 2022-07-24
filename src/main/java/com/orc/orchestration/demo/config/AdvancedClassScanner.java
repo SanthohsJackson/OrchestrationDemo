@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.lang.annotation.Annotation;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class AdvancedClassScanner {
@@ -38,7 +39,7 @@ public class AdvancedClassScanner {
         if (connectorTasks.containsKey(ConnectorTask.class)) {
             List<ConnectorTask> initialList = connectorTasks.get(ConnectorTask.class);
 
-            Optional<ConnectorTask> connectorTask = reduceConnectTask(initialList, connectorTasks);
+            Optional<ConnectorTask> connectorTask = reduceConnectTask(currentTask,initialList, connectorTasks);
             if (connectorTask.isPresent()) {
                 executor.setBulkJobProcess(connectorTask.get());
             }
@@ -76,22 +77,28 @@ public class AdvancedClassScanner {
     }
 
 
-    private Optional<ConnectorTask> reduceConnectTask(List<ConnectorTask> connectorTaskList, LinkedHashMap<Class<? extends ConnectorTask>, List<ConnectorTask>> connectorTasksMap) {
-        Optional<ConnectorTask> result = Optional.empty();
+    private Optional<ConnectorTask> reduceConnectTask(ConnectorTask parentTask, List<ConnectorTask> connectorTaskList,
+                                                      LinkedHashMap<Class<? extends ConnectorTask>,
+                                                              List<ConnectorTask>> connectorTasksMap) {
+        ConnectorTask currentTask = parentTask;
         if (connectorTaskList != null && connectorTaskList.size() > 0) {
-            result = connectorTaskList.stream().sorted(Comparator.comparingInt(x -> x.getClass().getAnnotation(JobOrder.class).priority())).reduce((task , nextask) -> {
-                List<ConnectorTask> afterTaskList = connectorTasksMap.get(task.getClass());
-                System.out.println("Task class: " + task.getClass());
+            List<ConnectorTask> sortedConnectorTask = connectorTaskList.stream().
+                    sorted(Comparator.comparingInt(x -> x.getClass().getAnnotation(JobOrder.class).priority()))
+                    .collect(Collectors.toList());
+
+            for (ConnectorTask sortedTask : sortedConnectorTask) {
+                List<ConnectorTask> afterTaskList = connectorTasksMap.get(sortedTask.getClass());
 
                 if (afterTaskList != null && afterTaskList.size() > 0) {
-                    ConnectorTask nextConnectorTask = reduceConnectTask(afterTaskList, connectorTasksMap).get();
-                    nextConnectorTask = task.appendNext(nextConnectorTask);
-                    return nextConnectorTask;
+                    ConnectorTask nextConnectorTask = reduceConnectTask(sortedTask, afterTaskList, connectorTasksMap).get();
+                    currentTask = currentTask.appendNext(nextConnectorTask);
+                } else {
+                    currentTask = currentTask.appendNext(sortedTask);
                 }
-                return task;
-            });
+
+            }
         }
-        return result;
+        return Optional.ofNullable(currentTask);
     }
 
 }
