@@ -1,6 +1,6 @@
 package com.orc.orchestration.demo;
 
-import com.orc.orchestration.demo.config.AdvancedClassScanner;
+import com.orc.orchestration.demo.service.ConnectorTaskServiceImpl;
 import com.orc.orchestration.demo.service.ExecutorServiceImpl;
 import com.orc.orchestration.demo.task.ConnectorTask;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,7 @@ public class OrchestrationDemoApplication implements CommandLineRunner {
     private ApplicationContext applicationContext;
 
     @Autowired
-    private AdvancedClassScanner classScanner;
+    private ConnectorTaskServiceImpl classScanner;
 
     public static void main(String[] args) {
         SpringApplication.run(OrchestrationDemoApplication.class, args);
