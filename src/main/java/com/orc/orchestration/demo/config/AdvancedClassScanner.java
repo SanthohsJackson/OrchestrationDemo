@@ -9,7 +9,6 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.stereotype.Component;
 
-import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.stream.Collectors;
 
