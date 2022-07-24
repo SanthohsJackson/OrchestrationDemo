@@ -1,0 +1,3 @@
+connector:
+  task:
+    basePackage: "com.orc.orchestration.demo"

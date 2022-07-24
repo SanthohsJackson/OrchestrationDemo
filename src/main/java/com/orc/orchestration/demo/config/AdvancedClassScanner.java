@@ -1,8 +1,8 @@
 package com.orc.orchestration.demo.config;
 
-import com.orc.orchestration.demo.executor.Executor;
 import com.orc.orchestration.demo.task.ConnectorTask;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -18,38 +18,36 @@ public class AdvancedClassScanner {
     @Autowired
     private ApplicationContext applicationContext;
 
-    @Autowired
-    private Executor executor;
+    @Value("${connector.task.basePackage}")
+    private String CONNECTOR_BASE_PACKAGE;
 
-    public void setJobOrder() {
+
+    public Optional<ConnectorTask> getJobExecutionOrder() {
+        // Use the classpath scanner to scanner for the annotation
         ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
         provider.addIncludeFilter(new AnnotationTypeFilter(JobOrder.class));
 
+        //Sort the task based on who will come before them ,using the "after" value
         LinkedHashMap<Class<? extends ConnectorTask>, List<ConnectorTask>> connectorTasks = sortConnectedTasks(provider);
 
-        ConnectorTask currentTask = new ConnectorTask() {
-            @Override
-            public void process(Object context) {
-                System.out.println("Pre-configurations");
-            }
-        };
+        //In case we need to add pre-configuration to be executed, can be removed if not needed
+        ConnectorTask currentTask = context -> System.out.println("Pre-configurations");
 
-
+        //Append the tasks based on priority and after value.
         if (connectorTasks.containsKey(ConnectorTask.class)) {
             List<ConnectorTask> initialList = connectorTasks.get(ConnectorTask.class);
+            Optional<ConnectorTask> connectorTask = appendTasksBasedOnPriorityAndAfterValue(currentTask, initialList, connectorTasks);
+            return connectorTask;
 
-            Optional<ConnectorTask> connectorTask = reduceConnectTask(currentTask,initialList, connectorTasks);
-            if (connectorTask.isPresent()) {
-                executor.setBulkJobProcess(connectorTask.get());
-            }
         }
 
+        return Optional.empty();
 
     }
 
     private LinkedHashMap<Class<? extends ConnectorTask>, List<ConnectorTask>> sortConnectedTasks(ClassPathScanningCandidateComponentProvider provider) {
-        LinkedHashMap<Class<? extends ConnectorTask>, List<ConnectorTask>> connectorTasks = new LinkedHashMap();
-        Set<BeanDefinition> beanDefs = provider.findCandidateComponents("com.orc.orchestration.demo");
+        LinkedHashMap<Class<? extends ConnectorTask>, List<ConnectorTask>> connectorTasks = new LinkedHashMap<Class<? extends ConnectorTask>, List<ConnectorTask>>();
+        Set<BeanDefinition> beanDefs = provider.findCandidateComponents(CONNECTOR_BASE_PACKAGE);
         beanDefs.stream().map(BeanDefinition::getBeanClassName).forEach(beanClass -> {
             try {
                 Object connectorObj = applicationContext.getBean(Class.forName(beanClass));
@@ -71,14 +69,20 @@ public class AdvancedClassScanner {
                 System.out.println("Error reading beach definitions");
             }
         });
-
         return connectorTasks;
+
     }
 
-
-    private Optional<ConnectorTask> reduceConnectTask(ConnectorTask parentTask, List<ConnectorTask> connectorTaskList,
-                                                      LinkedHashMap<Class<? extends ConnectorTask>,
-                                                              List<ConnectorTask>> connectorTasksMap) {
+    /**
+     * @param parentTask
+     * @param connectorTaskList
+     * @param connectorTasksMap
+     * @return This method recursively call itself till there is no after task(s) to append to a parent task and then returns
+     * consolidated tasks in priority and after value order of execution.
+     */
+    private Optional<ConnectorTask> appendTasksBasedOnPriorityAndAfterValue(ConnectorTask parentTask, List<ConnectorTask> connectorTaskList,
+                                                                            LinkedHashMap<Class<? extends ConnectorTask>,
+                                                                                    List<ConnectorTask>> connectorTasksMap) {
         ConnectorTask currentTask = parentTask;
         if (connectorTaskList != null && connectorTaskList.size() > 0) {
             List<ConnectorTask> sortedConnectorTask = connectorTaskList.stream().
@@ -89,7 +93,7 @@ public class AdvancedClassScanner {
                 List<ConnectorTask> afterTaskList = connectorTasksMap.get(sortedTask.getClass());
 
                 if (afterTaskList != null && afterTaskList.size() > 0) {
-                    ConnectorTask nextConnectorTask = reduceConnectTask(sortedTask, afterTaskList, connectorTasksMap).get();
+                    ConnectorTask nextConnectorTask = appendTasksBasedOnPriorityAndAfterValue(sortedTask, afterTaskList, connectorTasksMap).get();
                     currentTask = currentTask.appendNext(nextConnectorTask);
                 } else {
                     currentTask = currentTask.appendNext(sortedTask);
