@@ -8,11 +8,9 @@ public class BulkJobExecutor implements  Executor{
 
     private ConnectorTask bulkJobProcess;
 
-    public void setBulkJobProcess(ConnectorTask bulkJobProcess) {
-        this.bulkJobProcess = bulkJobProcess;
-    }
 
-    public void execute(Object context){
+    public void execute(ConnectorTask bulkJobProcess,Object context){
+        this.bulkJobProcess = bulkJobProcess;
         bulkJobProcess.executeChain(context);
     }
 }

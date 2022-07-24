@@ -4,7 +4,6 @@ import com.orc.orchestration.demo.task.ConnectorTask;
 
 public interface Executor {
 
-    void execute(Object context);
+    void execute(ConnectorTask bulkJobProcess,Object context);
 
-    void setBulkJobProcess(ConnectorTask bulkJobProcess);
 }

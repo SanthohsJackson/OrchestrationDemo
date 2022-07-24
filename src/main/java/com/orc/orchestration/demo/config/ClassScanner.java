@@ -54,7 +54,7 @@ public class ClassScanner {
           currentTask = currentTask.appendNext(jobs.get(x));
 
         }
-        executor.setBulkJobProcess(currentTask);
+        executor.execute(currentTask,new Object());
 
     }
 }
